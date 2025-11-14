@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 import { GiCheckMark } from "react-icons/gi";
+import { MdDelete } from "react-icons/md";
+import WalletConnect from './components/WalletConnect';
 
 function App() {
 
@@ -10,8 +12,19 @@ function App() {
     {id: 3, description: 'Task 3', isCompleted: false},
   ]);
 
+  const [newTask, setNewTask] = useState('');
+
+  const [provider, setProvider] = useState(null);
+  const [signer, setSigner] = useState(null);
+
   const toggleTask = (id) => {
     setTasks(tasks.map((t) => (t.id === id ? {...t, isCompleted: !t.isCompleted} : t)))
+  }
+
+  const addTask = () => {
+    if(!newTask.trim()) return;
+    setTasks([...tasks, {id: Date.now(), description: newTask, isCompleted: false}]);
+    setNewTask('');
   }
   
 
@@ -24,7 +37,7 @@ function App() {
       <div className='flex justify-between items-center mb-6'>
         <h1 className='text-2xl font-semibold text-primary'>Simple Todo</h1>
         <div className='text-xs text-gray-400'>
-          <p>0xabcd...1234</p>
+          <WalletConnect setProvider={setProvider} setSigner={setSigner}/>
         </div>
       </div>
 
@@ -46,9 +59,22 @@ function App() {
             </div>
             <span className={`text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-200'}`}>{task.description}</span>
               </div>
+              <div className='text-red-500 hover:text-red-700 cursor-pointer transition-colors duration-300 ease-in-out'
+              onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}>
+                <MdDelete size={24}/>
+              </div>
             </div>
           ))
         }
+      </div>
+
+      {/* Add New Task */}
+
+      <div className='flex mt-6 gap-2'>
+        <input type='text' value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder='New Task' 
+        className='flex-grow bg-white/5 rounded-lg px-3 py-2 outline-none placeholder-gray-500 text-sm text-white'/>
+        <button className='bg-primary hover:bg-emerald-600 cursor-pointer px-4 py-2 rounded-lg flex items-center gap-1 transition-colors duration-300 ease-in-out'
+        onClick={addTask}>Add Task</button>
       </div>
 
      </div>
