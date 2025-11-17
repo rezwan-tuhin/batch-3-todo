@@ -1,31 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { GiCheckMark } from "react-icons/gi";
 import { MdDelete } from "react-icons/md";
 import WalletConnect from './components/WalletConnect';
+import { contractAddress, abi } from './constant';
+import { ethers } from 'ethers';
 
 function App() {
 
   const [tasks, setTasks] = useState([
-    {id: 1, description: 'Task 1', isCompleted: true},
-    {id: 2, description: 'Task 2', isCompleted: false},
-    {id: 3, description: 'Task 3', isCompleted: false},
+    // {id: 1, description: 'Task 1', isCompleted: true},
+    // {id: 2, description: 'Task 2', isCompleted: false},
+    // {id: 3, description: 'Task 3', isCompleted: false},
   ]);
 
   const [newTask, setNewTask] = useState('');
 
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
+  // const [loading, setLoading] = useState(false);
 
   const toggleTask = (id) => {
     setTasks(tasks.map((t) => (t.id === id ? {...t, isCompleted: !t.isCompleted} : t)))
   }
 
-  const addTask = () => {
+  const addTask = async () => {
     if(!newTask.trim()) return;
-    setTasks([...tasks, {id: Date.now(), description: newTask, isCompleted: false}]);
+    try{
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      const tx = await contract.addTodo(newTask);
+      await tx.wait();
+
+    }catch(error) {
+      console.error('error adding task', error);
+    }
     setNewTask('');
   }
+
+  const loadTasks = async () => {
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+    const tasks = await contract.getTasks();
+
+    const taskArray = tasks.map((task) => ({
+      id: Number(task[0]),
+      description: task[1],
+      isCompleted: task[3]
+    }));
+
+    setTasks(taskArray);
+  }
+
+  useEffect(() => {
+    if(!signer)  return;
+    loadTasks();
+  },[signer]);
   
 
   return (
@@ -47,7 +75,7 @@ function App() {
         <h2 className='text-gray-300 text-sm mb-2'>Tasks</h2>
         {
           tasks.map((task) => (
-            <div key={task.id} 
+            <div key={Number(task.id)} 
             className= {`flex items-center justify-between px-4 py-3 rounded-xl ${task.isCompleted ? 'bg-green-500/10 border border-green-500/30' : 'bg-white/5'}`}>
               <div className='flex items-center gap-3 cursor-pointer' onClick={() => toggleTask(task.id)}>
               <div className={`w-5 h-5 border-2 flex items-center justify-center ${task.isCompleted ? 'border-green-400 bg-green-500/20' : 'border-gray-500'}`}>
