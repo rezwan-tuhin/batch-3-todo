@@ -18,11 +18,26 @@ function App() {
 
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
-  // const [loading, setLoading] = useState(false);
+  
+ 
+  
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map((t) => (t.id === id ? {...t, isCompleted: !t.isCompleted} : t)))
+  const loadTasks = async () => {
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+    const tasks = await contract.getTasks();
+
+    const taskArray = tasks.map((task) => (
+      {
+        id: Number(task.id),
+        description: task.description,
+        isCompleted: task.isCompleted
+      }
+    ));
+
+    setTasks(taskArray);
+    
   }
+
 
   const addTask = async () => {
     if(!newTask.trim()) return;
@@ -37,23 +52,30 @@ function App() {
     setNewTask('');
   }
 
-  const loadTasks = async () => {
+
+  const toggleTask = async (id) => {
     const contract = new ethers.Contract(contractAddress, abi, signer);
-    const tasks = await contract.getTasks();
-
-    const taskArray = tasks.map((task) => ({
-      id: Number(task[0]),
-      description: task[1],
-      isCompleted: task[3]
-    }));
-
-    setTasks(taskArray);
+    const tx = await contract.toggleTask(id);
+    await tx.wait();
   }
 
+  const deleteTask = async (id) => {
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+    const tx = await contract.deleteTask(id);
+    await tx.wait();
+  }
+
+
   useEffect(() => {
-    if(!signer)  return;
+    if(!signer) return;
     loadTasks();
-  },[signer]);
+  }, [signer, addTask, toggleTask, deleteTask]);
+
+
+  
+  
+
+
   
 
   return (
@@ -88,7 +110,7 @@ function App() {
             <span className={`text-sm ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-200'}`}>{task.description}</span>
               </div>
               <div className='text-red-500 hover:text-red-700 cursor-pointer transition-colors duration-300 ease-in-out'
-              onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}>
+              onClick={() => deleteTask(task.id)}>
                 <MdDelete size={24}/>
               </div>
             </div>
